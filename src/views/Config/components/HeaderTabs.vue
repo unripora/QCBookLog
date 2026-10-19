@@ -28,7 +28,7 @@ defineProps<{ selectedType: SelectedType }>();
 defineEmits<{ (e: 'select', value: SelectedType): void }>();
 
 const tabs: Array<{ value: SelectedType; label: string }> = [
-  { value: 'sync-status', label: '书库同步状态' },
+  { value: 'sync-status', label: '数据库检测' },
   { value: 'calibre', label: '同步 Calibre' },
   { value: 'talebook', label: '同步 Talebook' }
 ];

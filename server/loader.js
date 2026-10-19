@@ -2,6 +2,13 @@ import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { File as BufferFile } from 'buffer';
+
+// Node 18 兼容：undici 新版依赖全局 File（Node 20+ 才内置），
+// Node 18.13+ 的 buffer 模块提供了同名实现，缺什么补什么
+if (typeof globalThis.File === 'undefined') {
+  globalThis.File = BufferFile;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

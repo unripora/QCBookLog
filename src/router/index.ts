@@ -190,6 +190,7 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   // 书摘相关路由
+  { path: '/bookmark/ocr', name: 'BookmarkOcr', component: () => import('@/views/Bookmark/OcrScanner.vue'), meta: { title: 'OCR 识别' } },
   {
     path: '/bookmark/detail/:id',
     name: 'BookmarkDetail',

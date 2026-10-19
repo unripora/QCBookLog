@@ -20,6 +20,7 @@ router.post('/talebook-path', configController.setTalebookPath.bind(configContro
 router.post('/validate-talebook', configController.validateTalebook.bind(configController));
 
 router.get('/check-databases', configController.checkDatabases.bind(configController));
+router.get('/detect-databases', configController.detectDatabases.bind(configController));
 router.post('/create-database', configController.createDatabase.bind(configController));
 router.post('/set-default', configController.setDefault.bind(configController));
 router.get('/system-status', configController.getSystemStatus.bind(configController));

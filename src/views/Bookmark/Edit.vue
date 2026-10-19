@@ -452,6 +452,16 @@ onMounted(async () => {
         form.bookId = book.id;
       }
     }
+
+    // 来自 OCR 识别的合并草稿：回填内容并标记来源
+    if (route.query.ocr === '1') {
+      const draft = sessionStorage.getItem('ocrDraftContent');
+      if (draft) {
+        form.content = draft;
+        form.importSource = 'ocr';
+        sessionStorage.removeItem('ocrDraftContent');
+      }
+    }
   } catch (error) {
     console.error('加载数据失败:', error);
   }

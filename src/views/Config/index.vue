@@ -2,36 +2,21 @@
   <div class="config-page">
     <HeaderTabs :selected-type="selectedType" @select="selectType" />
 
-    <!-- 同步状态页面 -->
+    <!-- 数据库检测页面 -->
     <template v-if="selectedType === 'sync-status'">
       <div class="sync-status-page">
         <div class="sync-status-page__header">
-          <h2 class="sync-status-page__title">书库同步状态</h2>
+          <h2 class="sync-status-page__title">数据库检测</h2>
           <p class="sync-status-page__subtitle">
-            实时显示 Calibre 书库与 Talebook 书库的同步情况
+            检测 Calibre 与 Talebook 数据库文件是否可访问
           </p>
         </div>
 
-        <SyncStatusCards
-          :overall-sync-status="overallSyncStatus"
-          :overall-sync-status-text="overallSyncStatusText"
-          :last-sync-time="lastSyncTime"
-          :last-sync-result="lastSyncResult"
-          :sync-mode="syncMode"
-          :syncing="syncing"
-          :calibre-to-talebook-status="calibreToTalebookStatus"
-          :calibre-to-talebook-status-text="calibreToTalebookStatusText"
-          :calibre-to-talebook-progress="calibreToTalebookProgress"
-          :calibre-to-talebook-synced-books="calibreToTalebookSyncedBooks"
-          :calibre-to-talebook-total-books="calibreToTalebookTotalBooks"
-          :calibre-to-talebook-duration="calibreToTalebookDuration"
-          :talebook-to-calibre-status="talebookToCalibreStatus"
-          :talebook-to-calibre-status-text="talebookToCalibreStatusText"
-          :talebook-to-calibre-progress="talebookToCalibreProgress"
-          :talebook-to-calibre-synced-books="talebookToCalibreSyncedBooks"
-          :talebook-to-calibre-total-books="talebookToCalibreTotalBooks"
-          :talebook-to-calibre-duration="talebookToCalibreDuration"
-          @execute-sync="executeSync"
+        <DatabaseDetectPanel
+          :calibre="calibre"
+          :talebook="talebook"
+          :detecting="detecting"
+          :detect-error="detectError"
           @refresh="refreshSyncStatus"
         />
 
@@ -145,7 +130,7 @@ import StepIndicator from './components/StepIndicator.vue';
 import ConfigStepSelect from './components/ConfigStepSelect.vue';
 import ConfigStepValidate from './components/ConfigStepValidate.vue';
 import ConfigStepComplete from './components/ConfigStepComplete.vue';
-import SyncStatusCards from './components/SyncStatusCards.vue';
+import DatabaseDetectPanel from './components/DatabaseDetectPanel.vue';
 import SyncDetailsPanel from './components/SyncDetailsPanel.vue';
 import TransferCard from './components/TransferCard.vue';
 import TransferDialog from './components/TransferDialog.vue';
@@ -207,30 +192,15 @@ function goHome() {
   window.location.href = '/';
 }
 
-// ---- 同步状态 ----
+// ---- 数据库检测 ----
 const sync = useSyncStatus();
 const {
-  overallSyncStatus,
-  overallSyncStatusText,
-  lastSyncTime,
-  lastSyncResult,
-  syncMode,
-  calibreToTalebookStatus,
-  calibreToTalebookStatusText,
-  calibreToTalebookProgress,
-  calibreToTalebookSyncedBooks,
-  calibreToTalebookTotalBooks,
-  calibreToTalebookDuration,
-  talebookToCalibreStatus,
-  talebookToCalibreStatusText,
-  talebookToCalibreProgress,
-  talebookToCalibreSyncedBooks,
-  talebookToCalibreTotalBooks,
-  talebookToCalibreDuration,
-  syncing,
+  calibre,
+  talebook,
+  detecting,
+  detectError,
   syncLogs,
-  refreshSyncStatus,
-  executeSync
+  refreshSyncStatus
 } = sync;
 
 // ---- 数据转移 ----

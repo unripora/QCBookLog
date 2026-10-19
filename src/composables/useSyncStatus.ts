@@ -1,47 +1,38 @@
 /**
- * useSyncStatus - 同步状态 Composable
+ * useDatabaseDetect - 数据库检测 Composable
  *
- * 负责同步状态（Calibre <-> Talebook）数据的获取与执行同步。
+ * 负责检测 Calibre / Talebook 数据库文件的状态（存在、权限、有效性）。
+ * Docker 部署下无法便捷选择目录，故本页只做只读检测，不再提供同步操作。
  */
 
 import { ref } from 'vue';
 import {
-  fetchSyncStatus,
-  executeCalibreToTalebook
+  detectDatabases,
+  type DbDetectResult,
+  type DbDetectStatus
 } from '@/api/config/syncStatusService';
 
+/** 检测状态对应的展示文案与严重级别 */
+export const DB_STATUS_META: Record<DbDetectStatus, { label: string; level: 'ok' | 'warn' | 'fail' }> = {
+  ok: { label: '已就绪', level: 'ok' },
+  not_found: { label: '未找到数据库', level: 'fail' },
+  no_permission: { label: '无读取权限', level: 'fail' },
+  invalid: { label: '数据库无效', level: 'warn' }
+};
+
+const EMPTY_RESULT: DbDetectResult = { path: '', status: 'not_found', message: '尚未检测' };
+
 export function useSyncStatus() {
-  // 总体同步状态
-  const overallSyncStatus = ref<'synced' | 'syncing' | 'failed' | 'conflicted' | 'pending'>('synced');
-  const overallSyncStatusText = ref('已同步');
-  const lastSyncTime = ref('');
-  const lastSyncResult = ref('');
-  const syncMode = ref('双向同步');
+  const calibre = ref<DbDetectResult>({ ...EMPTY_RESULT });
+  const talebook = ref<DbDetectResult>({ ...EMPTY_RESULT });
 
-  // Calibre → Talebook
-  const calibreToTalebookStatus = ref('synced');
-  const calibreToTalebookStatusText = ref('已同步');
-  const calibreToTalebookProgress = ref(0);
-  const calibreToTalebookSyncedBooks = ref(0);
-  const calibreToTalebookTotalBooks = ref(0);
-  const calibreToTalebookDuration = ref('00:00:00');
+  /** 是否正在检测 */
+  const detecting = ref(false);
+  /** 检测过程中的错误（整体请求失败） */
+  const detectError = ref('');
 
-  // Talebook → Calibre
-  const talebookToCalibreStatus = ref('synced');
-  const talebookToCalibreStatusText = ref('已同步');
-  const talebookToCalibreProgress = ref(0);
-  const talebookToCalibreSyncedBooks = ref(0);
-  const talebookToCalibreTotalBooks = ref(0);
-  const talebookToCalibreDuration = ref('00:00:00');
-
-  const syncing = ref(false);
-
-  // 日志
-  const syncLogs = ref<Array<{ time: string; message: string }>>([
-    { time: new Date().toLocaleString(), message: '系统初始化，正在获取同步状态...' }
-  ]);
-
-  const syncStatusData = ref<any>(null);
+  // 日志（保留最近 20 条）
+  const syncLogs = ref<Array<{ time: string; message: string }>>([]);
 
   function pushLog(message: string) {
     syncLogs.value.unshift({ time: new Date().toLocaleString(), message });
@@ -50,103 +41,43 @@ export function useSyncStatus() {
     }
   }
 
-  async function refreshSyncStatus() {
-    try {
-      const result = await fetchSyncStatus();
-      if (result.success && result.data) {
-        const syncData = result.data;
-        syncStatusData.value = syncData;
-
-        if (syncData.conflicted && syncData.conflicted > 0) {
-          overallSyncStatus.value = 'conflicted';
-          overallSyncStatusText.value = '存在冲突';
-        } else if (
-          (syncData.onlyInCalibre && syncData.onlyInCalibre.length > 0) ||
-          (syncData.onlyInTalebook && syncData.onlyInTalebook.length > 0)
-        ) {
-          overallSyncStatus.value = 'pending';
-          overallSyncStatusText.value = '需要同步';
-        } else {
-          overallSyncStatus.value = 'synced';
-          overallSyncStatusText.value = '已同步';
-        }
-
-        lastSyncTime.value = new Date().toLocaleString();
-        lastSyncResult.value = result.status === 'success' ? '成功' : '失败';
-
-        calibreToTalebookSyncedBooks.value = syncData.calibre?.inBoth || 0;
-        calibreToTalebookTotalBooks.value = syncData.calibre?.total || 0;
-        calibreToTalebookProgress.value = syncData.calibre?.total
-          ? Math.round((syncData.calibre.inBoth / syncData.calibre.total) * 100)
-          : 100;
-
-        talebookToCalibreSyncedBooks.value = syncData.talebook?.inBoth || 0;
-        talebookToCalibreTotalBooks.value = syncData.talebook?.total || 0;
-        talebookToCalibreProgress.value = syncData.talebook?.total
-          ? Math.round((syncData.talebook.inBoth / syncData.talebook.total) * 100)
-          : 100;
-
-        pushLog(
-          `同步状态更新: Calibre ${syncData.calibre?.total || 0} 本，Talebook ${syncData.talebook?.total || 0} 本，冲突 ${syncData.conflicted || 0} 本`
-        );
-      } else {
-        pushLog(`获取同步状态失败: ${result.message || '未知错误'}`);
-      }
-    } catch (err) {
-      console.error('获取同步状态失败:', err);
-      pushLog(`获取同步状态失败: ${(err as Error).message}`);
-    }
+  function describe(name: string, result: DbDetectResult): string {
+    const label = DB_STATUS_META[result.status]?.label || '未知状态';
+    return `${name}：${label}（${result.path || '未配置路径'}）`;
   }
 
-  async function executeSync() {
-    if (syncing.value) return;
-    syncing.value = true;
-    pushLog('开始执行同步...');
+  async function refreshSyncStatus() {
+    if (detecting.value) return;
+    detecting.value = true;
+    detectError.value = '';
+    pushLog('开始检测数据库状态...');
+
     try {
-      const result = await executeCalibreToTalebook();
-      if (result.status === 'success' || result.status === 'SUCCESS') {
-        pushLog(`同步完成: ${result.message}`);
-        lastSyncResult.value = '成功';
-        lastSyncTime.value = new Date().toLocaleString();
+      const result = await detectDatabases();
+      if (result.success && result.data) {
+        calibre.value = result.data.calibre;
+        talebook.value = result.data.talebook;
+        pushLog(describe('Calibre', result.data.calibre));
+        pushLog(describe('Talebook', result.data.talebook));
       } else {
-        pushLog(`同步失败: ${result.message}`);
-        lastSyncResult.value = '失败';
+        detectError.value = result.error || '检测失败，请稍后重试';
+        pushLog(`检测失败: ${detectError.value}`);
       }
-      await refreshSyncStatus();
     } catch (err) {
-      console.error('执行同步失败:', err);
-      pushLog(`同步失败: ${(err as Error).message}`);
-      lastSyncResult.value = '失败';
+      detectError.value = (err as Error).message;
+      pushLog(`检测失败: ${detectError.value}`);
     } finally {
-      syncing.value = false;
+      detecting.value = false;
     }
   }
 
   return {
-    // state
-    overallSyncStatus,
-    overallSyncStatusText,
-    lastSyncTime,
-    lastSyncResult,
-    syncMode,
-    calibreToTalebookStatus,
-    calibreToTalebookStatusText,
-    calibreToTalebookProgress,
-    calibreToTalebookSyncedBooks,
-    calibreToTalebookTotalBooks,
-    calibreToTalebookDuration,
-    talebookToCalibreStatus,
-    talebookToCalibreStatusText,
-    talebookToCalibreProgress,
-    talebookToCalibreSyncedBooks,
-    talebookToCalibreTotalBooks,
-    talebookToCalibreDuration,
-    syncing,
+    calibre,
+    talebook,
+    detecting,
+    detectError,
     syncLogs,
-    syncStatusData,
-    // actions
     refreshSyncStatus,
-    executeSync,
     pushLog
   };
 }

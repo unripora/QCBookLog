@@ -8,6 +8,9 @@
         </svg>
         <span>搜索书摘...</span>
       </div>
+      <button class="action-btn ocr-btn" title="拍照识别书摘" @click="goToOcrScanner">
+        <svg viewBox="0 0 24 24"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+      </button>
       <button class="action-btn add-btn" @click="goToAddBookmark">
         <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
       </button>
@@ -266,6 +269,10 @@ const goToAddBookmark = () => {
   router.push('/bookmark/edit');
 };
 
+const goToOcrScanner = () => {
+  router.push('/bookmark/ocr');
+};
+
 const goToBookmarkDetail = (id: string | number) => {
   router.push(`/bookmark/detail/${id}`);
 };
@@ -428,6 +435,17 @@ onMounted(async () => {
   background-color: var(--primary-color, #FF6B35);
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(255, 107, 53, 0.15);
+}
+
+.ocr-btn {
+  background-color: #f5f5f5;
+  color: #555555;
+}
+
+.ocr-btn:hover {
+  background-color: #e0e0e0;
+  color: #333333;
+  transform: scale(1.05);
 }
 
 .add-btn svg {

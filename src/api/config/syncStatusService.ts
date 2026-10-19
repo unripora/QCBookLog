@@ -1,34 +1,38 @@
 /**
- * 同步状态服务（Service）
+ * 数据库检测服务（Service）
  *
- * 集中封装同步状态查询与同步执行相关的 API。
+ * 集中封装数据库文件状态检测相关的 API。
  */
 
 import { apiClient } from '../apiClient';
 
-export interface SyncStatusResponse {
+/** 单个数据库的检测状态码 */
+export type DbDetectStatus = 'ok' | 'not_found' | 'no_permission' | 'invalid';
+
+/** 单个数据库的检测结果 */
+export interface DbDetectResult {
+  /** 数据库文件路径 */
+  path: string;
+  /** 状态码 */
+  status: DbDetectStatus;
+  /** 人类可读的说明 */
+  message: string;
+}
+
+/** 数据库检测响应 */
+export interface DetectDatabasesResponse {
   success: boolean;
-  status?: string;
-  message?: string;
   data?: {
-    calibre?: { total: number; inBoth: number };
-    talebook?: { total: number; inBoth: number };
-    conflicted?: number;
-    onlyInCalibre?: any[];
-    onlyInTalebook?: any[];
+    calibre: DbDetectResult;
+    talebook: DbDetectResult;
   };
+  timestamp?: string;
+  error?: string;
 }
 
 /**
- * 获取同步状态
+ * 检测数据库状态（是否存在 / 是否有权限 / 是否有效）
  */
-export async function fetchSyncStatus(): Promise<SyncStatusResponse> {
-  return apiClient.get('/config/sync-status');
-}
-
-/**
- * 执行 Calibre 到 Talebook 的同步
- */
-export async function executeCalibreToTalebook(): Promise<{ status: string; message: string }> {
-  return apiClient.post('/sync/calibre-to-talebook');
+export async function detectDatabases(): Promise<DetectDatabasesResponse> {
+  return apiClient.get('/config/detect-databases');
 }

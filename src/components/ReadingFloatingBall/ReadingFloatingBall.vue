@@ -64,6 +64,10 @@
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.59 7.41L10.18 12l-4.59 4.59L7 18l6-6-6-6zM16 6h2v12h-2zM11 6h2v12h-2z" fill="currentColor"/></svg>
               <span>返回阅读</span>
             </button>
+            <button class="action-btn primary" @click.stop="handleOcrBookmark">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill="currentColor"/></svg>
+              <span>OCR 书摘</span>
+            </button>
           </div>
         </div>
 
@@ -238,6 +242,16 @@ const handleBackToReading = () => {
   if (readingStore.currentBookId) {
     router.push(`/book/reading/${readingStore.currentBookId}`);
   }
+  isExpanded.value = false;
+};
+
+// 跳转 OCR 识别页（携带当前书籍 ID，识别后可直接归属当前书）
+const handleOcrBookmark = () => {
+  const query: Record<string, string> = {};
+  if (readingStore.currentBookId) {
+    query.bookId = String(readingStore.currentBookId);
+  }
+  router.push({ path: '/bookmark/ocr', query });
   isExpanded.value = false;
 };
 

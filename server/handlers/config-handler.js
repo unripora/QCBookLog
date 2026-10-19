@@ -360,6 +360,109 @@ class ConfigController {
     }
   }
 
+  /**
+   * 检测数据库文件状态（只读，不做任何写入）
+   * 返回结构化状态码，供前端区分：
+   * - ok            文件存在且可读，连接/结构校验通过
+   * - not_found     文件或所在目录不存在
+   * - no_permission 文件存在但当前进程无读取权限
+   * - invalid       文件存在可读，但不是有效/受支持的数据库
+   */
+  async detectDatabases(req, res) {
+    try {
+      const calibrePath = databaseService.getDbPath();
+      const talebookPath = databaseService.getTalebookDbPath();
+
+      const detectOne = (dbPath, getError, isAvailable) => {
+        const result = {
+          path: dbPath || '',
+          status: 'ok',
+          message: ''
+        };
+
+        if (!dbPath) {
+          result.status = 'not_found';
+          result.message = '未配置数据库路径';
+          return result;
+        }
+
+        let stat = null;
+        try {
+          stat = fs.statSync(dbPath);
+        } catch (e) {
+          if (e.code === 'EACCES') {
+            result.status = 'no_permission';
+            result.message = '无权限访问该路径，请检查容器挂载目录的读取权限';
+          } else {
+            result.status = 'not_found';
+            result.message = '未找到数据库文件，请确认已正确挂载数据目录';
+          }
+          return result;
+        }
+
+        if (!stat.isFile()) {
+          result.status = 'invalid';
+          result.message = '路径不是一个数据库文件';
+          return result;
+        }
+
+        try {
+          fs.accessSync(dbPath, fs.constants.R_OK);
+        } catch (e) {
+          result.status = 'no_permission';
+          result.message = '数据库文件不可读，请检查文件权限（chmod/chown）';
+          return result;
+        }
+
+        const connError = getError ? getError() : null;
+        if (connError) {
+          // 连接层已区分「不存在 / 不可读」，此处按关键字归类，其余归为无效库
+          if (/不可读|权限|EACCES|permission/i.test(connError)) {
+            result.status = 'no_permission';
+            result.message = connError;
+          } else if (/不存在|ENOENT/i.test(connError)) {
+            result.status = 'not_found';
+            result.message = connError;
+          } else {
+            result.status = 'invalid';
+            result.message = connError;
+          }
+          return result;
+        }
+
+        if (isAvailable && !isAvailable()) {
+          result.status = 'invalid';
+          result.message = '数据库无法连接或结构不完整';
+          return result;
+        }
+
+        result.message = '数据库已就绪';
+        return result;
+      };
+
+      const cm = databaseService.connectionManager;
+      res.json({
+        success: true,
+        data: {
+          calibre: detectOne(
+            calibrePath,
+            () => cm?.getCalibreError?.(),
+            () => databaseService.isCalibreAvailable()
+          ),
+          talebook: detectOne(
+            talebookPath,
+            () => cm?.getTalebookError?.(),
+            () => databaseService.isTalebookAvailable()
+          )
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ 检测数据库失败:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   async checkDatabases(req, res) {
     try {
       res.json({
