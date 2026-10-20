@@ -1,0 +1,108 @@
+services:
+  # 前端服务 - Nginx
+  frontend:
+    image: crpi-bpk9dy6331fn5ymt.cn-hangzhou.personal.cr.aliyuncs.com/unripora/qc-booklog-frontend:v0.9.14
+    container_name: qc-booklog-frontend
+    ports:
+     - "7403:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - qc-booklog-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # 关键修复：挂载自定义Nginx配置文件
+      - /home/dockerdata/qcbookdata/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+    tmpfs:
+      - /var/cache/nginx:mode=777
+      - /run:mode=777
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 后端服务保持不变
+  backend:
+    image: crpi-bpk9dy6331fn5ymt.cn-hangzhou.personal.cr.aliyuncs.com/unripora/qc-booklog-backend:v0.9.14
+    # 与 talebook 容器的 PUID:PGID 保持一致，避免 talebook 启动脚本 chown 后失去数据库写权限
+    user: "1000:1000"
+    container_name: qc-booklog-backend
+    networks:
+      - qc-booklog-network
+    ports:
+      - "7401:7401"
+    volumes:
+      - /home/dockerdata/talebook/books/library:/app/calibre
+      - /home/dockerdata/talebook/books:/app/talebook
+      - /home/dockerdata/qcbookdata/data:/app/data
+      - /home/dockerdata/qcbookdata/data/logs:/app/data/logs
+      - /home/dockerdata/qcbookdata/data/backup:/app/data/backup
+      - /home/dockerdata/qcbookdata/data/logs:/data/logs
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=7401
+      - CALIBRE_DB_PATH=/app/calibre/metadata.db
+      - TALEBOOK_DB_PATH=/app/talebook/calibre-webserver.db
+      - QCBOOKLOG_DB_PATH=/app/data/qc_booklog.db
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_PATH=/app/data/logs
+      - TANSHU_API_KEY=${TANSHU_API_KEY}
+      - DOUBAN_API_KEY=${DOUBAN_API_KEY}
+      - ISBN_WORK_API_KEY=${ISBN_WORK_API_KEY}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-20}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - SYNC_INTERVAL=${SYNC_INTERVAL:-300000}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7401/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+networks:
+  qc-booklog-network:
+    driver: bridge
+    name: qc-booklog-network
+
+volumes:
+  qc-booklog-data:
+    driver: local
+    name: qc-booklog-data
+  qc-booklog-logs:
+    driver: local
+    name: qc-booklog-logs
+  qc-booklog-backup:
+    driver: local
+    name: qc-booklog-backup

@@ -1,0 +1,24 @@
+# 开发环境 Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+ENV npm_config_registry=https://registry.npmmirror.com
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+    && apk add --no-cache python3 make g++ py3-pip py3-setuptools
+
+COPY package*.json ./
+COPY server/package*.json ./server/
+
+RUN npm install --legacy-peer-deps \
+    && cd server && npm install
+
+COPY . .
+
+RUN mkdir -p /app/data/calibre /app/data/talebook /app/data/logs /app/data/metadata /app/data/user-images \
+    && chmod +x /app/start-dev.sh
+
+EXPOSE 8080 7401
+
+CMD ["sh", "/app/start-dev.sh"]

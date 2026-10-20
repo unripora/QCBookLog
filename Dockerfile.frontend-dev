@@ -1,0 +1,22 @@
+# 前端开发环境 Dockerfile - 使用 vite dev server (HMR)
+# 镜像仅预装 node + 依赖；源码通过卷挂载到容器内，启动 vite dev server
+FROM docker.1ms.run/node:20-alpine
+
+WORKDIR /app
+
+# 配置国内镜像加速
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories 2>/dev/null || true
+ENV npm_config_registry=https://registry.npmmirror.com \
+    npm_config_fetch_retries=2 \
+    npm_config_fetch_timeout=60000
+
+# 仅复制 package 文件，单独分层以利用 Docker 缓存
+COPY package*.json ./
+
+# 一次性安装依赖（若 package*.json 未变则复用缓存层）
+RUN npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps --ignore-scripts
+
+EXPOSE 8080
+
+# 默认命令（可被 docker run 覆盖）
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "8080"]
