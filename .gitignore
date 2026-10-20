@@ -1,0 +1,140 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+npminstall-debug.log*
+
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 数据文件
+data/
+server/data/
+*.db
+*.db-shm
+*.db-wal
+*.db.backup
+
+# 备份文件
+backup_*.db
+backup_*.json
+data/backup/
+server/data/backup/
+
+# 个人工作
+作业/
+.trae/
+
+# 环境配置
+.env
+
+# Windows 批处理
+*.bat
+*.ps1
+# 例外：Windows 一键打包脚本必须入库，供其他机器克隆后直接构建
+!scripts/build-win.bat
+!scripts/build-win.ps1
+
+# SQL 文件
+*.sql
+
+# 副本文件
+* - 副本.md
+* - 副本.js
+* - 副本.cjs
+* - 副本.mjs
+
+# TypeScript
+*.tsbuildinfo
+
+# 临时数据库文件
+下载*.db
+
+# OCR 资源（构建镜像时下载/拷贝，本地仓库不跟踪，避免仓库体积膨胀）
+public/tessdata/
+public/tesseract-core/
+public/tesseract-dist/
+
+# 临时文件夹（包含诊断脚本、部署工具、文档报告等非必要文件）
+temp/
+
+# 临时配置文件
+README_START.md
+REQUIRE_ERROR_FIX.md
+CLEANUP_SUMMARY.md
+API_FIX_SUMMARY.md
+
+# 1panel部署工具
+1panel-*/
+
+# 压缩包
+*.tar.gz
+*.zip
+
+# Python缓存
+__pycache__/
+*.pyc
+
+# 测试数据目录
+moni/
+
+# 备份文件
+*.bak
+
+# 前端依赖哈希（deploy.sh 自动生成，用于检测 package.json 变更）
+/.frontend-deps-hash
+
+# === 本地维护的部署/文档/调试文件（不上传 GitHub） ===
+# 部署配置
+/.dockerignore
+
+# 本地启动脚本
+/start-dev.sh
+/start.bat
+/start.ps1
+
+# 文档
+/DEPLOY.md
+/WORKFLOW.md
+/doc/
+
+# 临时数据
+/data/
+/tmp/
+/docs/
+
+# 桌面端打包产物与构建日志
+/release/
+build-win.log
+# 后端部署与调试
+/server/.dockerignore
+/server/Dockerfile
+/server/docker-entrypoint.sh
+/server/package-lock.json
+/server/test_db.js
+
+# 前端冗余资源
+/src/pic/
+docs/主界面响应式改造计划.md
+img/architecture.md
+
+/External/
+/tasks/

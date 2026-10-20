@@ -1,0 +1,115 @@
+{
+  "name": "QC-booklog",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "install:all": "npm install && cd server && npm install",
+    "electron:dev": "cross-env QC_DATA_DIR=./data electron .",
+    "electron:rebuild": "node scripts/dual-abi.js electron",
+    "electron:rebuild:node": "node scripts/dual-abi.js node",
+    "check:win": "node scripts/check-win-build.js",
+    "prepare:ocr": "node scripts/prepare-ocr-assets.js",
+    "build:win": "npm run build && npm run electron:rebuild && npm run check:win && electron-builder --win",
+    "build:win:oneclick": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-win.ps1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "sass": "^1.97.2",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.5",
+    "vue-tsc": "^2.2.0"
+  },
+  "dependencies": {
+    "@milkdown/core": "^7.22.1",
+    "@milkdown/kit": "^7.22.1",
+    "@milkdown/plugin-block": "^7.22.1",
+    "@milkdown/plugin-clipboard": "^7.22.1",
+    "@milkdown/plugin-cursor": "^7.22.1",
+    "@milkdown/plugin-emoji": "^7.22.1",
+    "@milkdown/plugin-history": "^7.22.1",
+    "@milkdown/plugin-listener": "^7.22.1",
+    "@milkdown/plugin-prism": "^7.22.1",
+    "@milkdown/plugin-slash": "^7.22.1",
+    "@milkdown/plugin-tooltip": "^7.22.1",
+    "@milkdown/plugin-upload": "^7.22.1",
+    "@milkdown/preset-commonmark": "^7.22.1",
+    "@milkdown/preset-gfm": "^7.22.1",
+    "@milkdown/theme-nord": "^7.22.1",
+    "@milkdown/vue": "^7.22.1",
+    "@types/uuid": "^10.0.0",
+    "@zxing/library": "^0.21.3",
+    "async-validator": "^4.2.5",
+    "axios": "^1.13.2",
+    "better-sqlite3": "^11.10.0",
+    "cheerio": "^1.1.2",
+    "chokidar": "^5.0.0",
+    "dayjs": "^1.11.13",
+    "echarts": "^6.0.0",
+    "exceljs": "^4.4.0",
+    "form-data": "^4.0.5",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "node-cache": "^5.1.2",
+    "node-gyp": "^12.1.0",
+    "pinia": "^2.3.0",
+    "tesseract.js": "^7.0.0",
+    "uuid": "^11.1.0",
+    "vite": "^7.3.1",
+    "vue": "^3.5.13",
+    "vue-demi": "^0.14.10",
+    "vue-router": "^4.5.0"
+  },
+  "build": {
+    "appId": "com.qcbooklog.desktop",
+    "productName": "QC BookLog",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "dist",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "**/*.js",
+          "**/*.json",
+          "node_modules/**",
+          "!**/.env",
+          "!**/logs/**",
+          "!test*.js"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true
+    }
+  }
+}
