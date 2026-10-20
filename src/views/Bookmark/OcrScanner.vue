@@ -12,17 +12,17 @@
     </div>
 
     <div class="page-body">
-      <!-- HTTPS 安全提示 -->
-      <div v-if="!cameraSupported" class="notice notice-warning">
-        <span class="notice-icon">🔒</span>
-        <span class="notice-text">开启 HTTPS 才能开启摄像头扫描（浏览器安全限制），当前可使用「相册上传」识别</span>
+      <!-- 摄像头能力提示 -->
+      <div v-if="cameraMode === 'capture'" class="notice notice-warning">
+        <span class="notice-icon">📱</span>
+        <span class="notice-text">{{ captureHint }}</span>
       </div>
 
       <!-- 操作区 -->
       <div class="action-bar">
-        <button class="action-block camera" :disabled="!cameraSupported || isRecognizing" @click="openCamera">
+        <button class="action-block camera" :disabled="isRecognizing" @click="openCamera">
           <span class="action-icon">📷</span>
-          <span>拍照扫描</span>
+          <span>{{ cameraMode === 'live' ? '拍照扫描' : '调用相机' }}</span>
         </button>
         <button class="action-block album" :disabled="isRecognizing" @click="triggerFileInput">
           <span class="action-icon">🖼️</span>
@@ -32,8 +32,9 @@
       <input
         ref="fileInput"
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/bmp"
-        multiple
+        :accept="cameraMode === 'capture' ? 'image/*' : 'image/jpeg,image/png,image/webp,image/bmp'"
+        :capture="cameraMode === 'capture' ? 'environment' : undefined"
+        :multiple="cameraMode !== 'capture'"
         class="file-input"
         @change="handleFileSelect"
       />
@@ -167,6 +168,7 @@ import {
   type OcrRecognizeResult,
   type OcrProgress
 } from '@/api/common/ocrScanner';
+import { pickCameraMode, getCaptureModeHint, type CameraMode } from '@/utils/cameraCapability';
 
 const router = useRouter();
 const route = useRoute();
@@ -184,7 +186,8 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const videoElement = ref<HTMLVideoElement | null>(null);
 
 // 状态
-const cameraSupported = ref(ocrScannerService.isCameraSupported());
+const cameraMode = ref<CameraMode>(pickCameraMode());
+const captureHint = getCaptureModeHint();
 const showCamera = ref(false);
 const showLanguages = ref(false);
 const isRecognizing = ref(false);
@@ -286,8 +289,9 @@ const recognizeFiles = async (files: File[]) => {
 
 // 打开摄像头
 const openCamera = async () => {
-  if (!cameraSupported.value) {
-    alert('开启 HTTPS 才能开启摄像头扫描（浏览器安全限制），请使用相册上传');
+  // 非安全上下文：getUserMedia 不可用，直接调起系统相机
+  if (cameraMode.value === 'capture') {
+    triggerFileInput();
     return;
   }
   showCamera.value = true;
@@ -309,8 +313,10 @@ const openCamera = async () => {
     }
   } catch (e) {
     console.error('❌ 打开摄像头失败:', e);
-    alert('无法访问摄像头，请检查授权或改用相册上传');
     closeCamera();
+    // 运行时降级：实时取景失败后改为系统相机
+    cameraMode.value = 'capture';
+    triggerFileInput();
   }
 };
 

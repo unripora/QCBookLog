@@ -18,8 +18,12 @@
         <!-- 摄像头未启动提示 -->
         <div v-if="!isCameraActive" class="camera-placeholder">
           <div class="placeholder-icon">📷</div>
-          <p class="placeholder-text">点击"开始扫描"按钮启动摄像头</p>
-          <p class="placeholder-hint">请确保已授予摄像头权限</p>
+          <p class="placeholder-text">
+            {{ cameraMode === 'live' ? '点击"开始扫描"按钮启动摄像头' : '点击"拍照扫描"调用系统相机' }}
+          </p>
+          <p class="placeholder-hint">
+            {{ cameraMode === 'live' ? '请确保已授予摄像头权限' : captureHint }}
+          </p>
         </div>
         
         <!-- 视频元素 -->
@@ -66,20 +70,21 @@
       <div class="camera-controls-container">
         <div class="camera-controls">
           <button class="control-btn" @click="toggleCamera">
-            {{ isCameraActive ? '停止扫描' : '开始扫描' }}
+            {{ isCameraActive ? '停止扫描' : (cameraMode === 'live' ? '开始扫描' : '拍照扫描') }}
           </button>
-          <button class="control-btn" @click="switchCamera" :disabled="!hasMultipleCameras">
+          <button v-if="cameraMode === 'live'" class="control-btn" @click="switchCamera" :disabled="!hasMultipleCameras">
             切换摄像头
           </button>
-          <button class="control-btn" @click="triggerFileInput">
+          <button v-if="cameraMode === 'live'" class="control-btn" @click="triggerFileInput">
             从图片扫描
           </button>
         </div>
-        <!-- 隐藏的文件输入 -->
+        <!-- 隐藏的文件输入（capture 模式直接调起系统相机） -->
         <input 
           ref="fileInput" 
           type="file" 
-          accept="image/jpeg,image/png,image/gif,image/webp" 
+          :accept="cameraMode === 'capture' ? 'image/*' : 'image/jpeg,image/png,image/gif,image/webp'"
+          :capture="cameraMode === 'capture' ? 'environment' : undefined"
           class="file-input" 
           @change="handleFileSelect"
         />
@@ -242,6 +247,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { BrowserBarcodeReader } from '@zxing/library';
 import { isbnImageScannerService } from '@/api/common/isbnImageScanner';
 import { detectImageQuality, type ImageQualityMetrics } from '@/utils/imageEnhancer';
+import { pickCameraMode, getCaptureModeHint, type CameraMode } from '@/utils/cameraCapability';
 
 const router = useRouter();
 const route = useRoute();
@@ -253,6 +259,9 @@ const fileInput = ref<HTMLInputElement | null>(null);
 
 // 状态管理
 const isCameraActive = ref(false);
+// 摄像头模式：live=实时取景（安全上下文），capture=调系统相机
+const cameraMode = ref<CameraMode>(pickCameraMode());
+const captureHint = getCaptureModeHint();
 const hasMultipleCameras = ref(false);
 const manualIsbn = ref('');
 const scannedResult = ref('');
@@ -703,6 +712,12 @@ const initCamera = async () => {
       stream.getTracks().forEach(track => track.stop());
       videoElement.value.srcObject = null;
     }
+
+    // 运行时降级：实时取景不可用时，改为调用系统相机，避免用户卡住
+    if (cameraMode.value === 'live') {
+      cameraMode.value = 'capture';
+      error.value = `${errorMsg}，已切换为拍照扫描`;
+    }
   }
 };
 
@@ -799,9 +814,14 @@ const stopQualityCheck = () => {
 const toggleCamera = async () => {
   if (isCameraActive.value) {
     stopCamera();
-  } else {
-    await initCamera();
+    return;
   }
+  // 非安全上下文：直接调用系统相机拍照，避免 getUserMedia 必然失败
+  if (cameraMode.value === 'capture') {
+    triggerFileInput();
+    return;
+  }
+  await initCamera();
 };
 
 // 切换前后摄像头
