@@ -5,6 +5,7 @@ import pathValidator from '../routes/config/validators/path-validator.js';
 import configManager from '../config/index.js';
 import fs from 'fs';
 import path from 'path';
+import { DATA_DIR } from '../utils/paths.js';
 
 class ConfigController {
   async getAllConfig(req, res) {
@@ -61,7 +62,7 @@ class ConfigController {
         try {
           currentDbPath = databaseService.getDbPath();
         } catch (e) {
-          currentDbPath = path.join(process.cwd(), 'data/calibre/metadata.db');
+          currentDbPath = path.join(DATA_DIR, 'calibre/metadata.db');
         }
       }
 
@@ -226,7 +227,7 @@ class ConfigController {
         try {
           currentDbPath = databaseService.getTalebookDbPath();
         } catch (e) {
-          currentDbPath = path.join(process.cwd(), 'data/talebook/calibre-webserver.db');
+          currentDbPath = path.join(DATA_DIR, 'talebook/calibre-webserver.db');
         }
       }
 

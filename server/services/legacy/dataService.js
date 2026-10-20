@@ -3,16 +3,9 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fsSync from 'fs';
 import configManager from '../../config/index.js';
+import { DATA_DIR as UNIFIED_DATA_DIR } from '../../utils/paths.js';
 
-const getProjectRoot = () => {
-  const currentDir = process.cwd();
-  if (path.basename(currentDir) === 'server') {
-    return path.dirname(currentDir);
-  }
-  return currentDir;
-};
-
-export const DATA_DIR = path.join(getProjectRoot(), 'data');
+export const DATA_DIR = UNIFIED_DATA_DIR;
 
 export const readConfig = async () => {
   return configManager.loadConfig();

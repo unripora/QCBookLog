@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { DATA_DIR } from '../utils/paths.js';
 
 const require = createRequire(import.meta.url);
 let Database = null;
@@ -17,7 +18,7 @@ try {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = path.join(__dirname, '../../data/qc_booklog.db');
+const DB_PATH = path.join(DATA_DIR, 'qc_booklog.db');
 
 export async function up() {
   console.log('🔄 开始迁移：添加 library_uuid 字段到 qc_book_mapping 表...');

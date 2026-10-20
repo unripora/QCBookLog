@@ -14,6 +14,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import simpleGit from 'simple-git';
 import userSettingsService from '../settings/userSettingsService.js';
+import { DATA_DIR } from '../../utils/paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,13 +40,9 @@ const SETTING_KEYS = {
   PROXY: 'gitProxy',
 };
 
-// 同步仓库目录：与数据库同目录（/app/data/sync-repo）
+// 同步仓库目录：与数据库同目录（DATA_DIR/sync-repo）
 function getDefaultRepoDir() {
-  const cwd = process.cwd();
-  if (path.basename(cwd) === 'server') {
-    return path.resolve(path.dirname(cwd), 'data', 'sync-repo');
-  }
-  return path.resolve(cwd, 'data', 'sync-repo');
+  return path.join(DATA_DIR, 'sync-repo');
 }
 
 const DEFAULT_REPO_DIR = getDefaultRepoDir();

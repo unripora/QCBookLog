@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { createRequire } from 'module';
 import fsSync from 'fs';
 import { normalizeBookTypeBindings } from '../../utils/bookBinding.js';
+import { PROJECT_ROOT, DATA_DIR } from '../../utils/paths.js';
 
 // 使用同步 require 导入 better-sqlite3
 const require = createRequire(import.meta.url);
@@ -24,14 +25,7 @@ try {
 }
 
 // 获取项目根目录
-const getProjectRoot = () => {
-  // 如果当前工作目录是server目录，则向上一级到达项目根目录
-  const currentDir = process.cwd();
-  if (path.basename(currentDir) === 'server') {
-    return path.dirname(currentDir);
-  }
-  return currentDir;
-};
+const getProjectRoot = () => PROJECT_ROOT;
 
 // 将相对路径转换为绝对路径
 const resolveDbPath = (dbPath) => {
@@ -51,9 +45,9 @@ const resolveDbPath = (dbPath) => {
 };
 
 // 默认数据库路径（可被环境变量覆盖）
-let CALIBRE_DB_PATH = path.join(getProjectRoot(), 'data/calibre/metadata.db');
-let TALEBOOK_DB_PATH = path.join(getProjectRoot(), 'data/talebook/calibre-webserver.db');
-let QC_BOOKLOG_DB_PATH = path.join(getProjectRoot(), 'data/qc_booklog.db');
+let CALIBRE_DB_PATH = path.join(DATA_DIR, 'calibre/metadata.db');
+let TALEBOOK_DB_PATH = path.join(DATA_DIR, 'talebook/calibre-webserver.db');
+let QC_BOOKLOG_DB_PATH = path.join(DATA_DIR, 'qc_booklog.db');
 
 // Calibre 数据库路径 - 优先使用环境变量
 if (process.env.CALIBRE_DB_PATH) {

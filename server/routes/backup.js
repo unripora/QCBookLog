@@ -14,9 +14,10 @@ import archiver from 'archiver';
 import unzipper from 'unzipper';
 import databaseService from '../services/legacy/database-service.js';
 import multer from 'multer';
+import * as PATHS from '../utils/paths.js';
 
 const router = express.Router();
-const DATA_DIR = path.join(process.cwd(), '../data');
+const DATA_DIR = PATHS.DATA_DIR;
 const BACKUP_DIR = path.join(DATA_DIR, 'metadata/backup');
 const TEMP_DIR = path.join(DATA_DIR, 'tmp/library-backup');
 
@@ -864,7 +865,7 @@ router.post('/library/restore', restoreUpload.single('file'), async (req, res) =
     // 通过 touch loader.js 触发 node --watch 重启
     setTimeout(() => {
       try {
-        const triggerFile = path.join(process.cwd(), 'loader.js');
+        const triggerFile = path.join(PATHS.SERVER_ROOT, 'loader.js');
         if (fsSync.existsSync(triggerFile)) {
           const now = new Date();
           fsSync.utimesSync(triggerFile, now, now);

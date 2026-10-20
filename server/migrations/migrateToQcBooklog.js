@@ -2,12 +2,13 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { DATA_DIR } from '../utils/paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const TALEBOOK_DB_PATH = path.join(__dirname, '../data/talebook/calibre-webserver.db');
-const QC_BOOKLOG_DB_PATH = path.join(__dirname, '../data/qc_booklog.db');
+const TALEBOOK_DB_PATH = path.join(DATA_DIR, 'talebook/calibre-webserver.db');
+const QC_BOOKLOG_DB_PATH = path.join(DATA_DIR, 'qc_booklog.db');
 
 export async function migrate() {
   console.log('🔄 开始数据迁移...');

@@ -7,6 +7,7 @@ import calibreService from '../legacy/calibreService.js';
 import fs from 'fs/promises';
 import path from 'path';
 import winston from 'winston';
+import { LOGS_DIR } from '../../utils/paths.js';
 import {
   MAPPING_RULES,
   TYPE_CONVERTERS,
@@ -25,7 +26,7 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.File({
-      filename: path.join(process.cwd(), '../data/logs/sync.log'),
+      filename: path.join(LOGS_DIR, 'sync.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5
     }),

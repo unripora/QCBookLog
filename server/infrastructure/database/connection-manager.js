@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { createRequire } from 'module';
 import configManager from '../../config/index.js';
 import fsSync from 'fs';
+import { PROJECT_ROOT, DATA_DIR } from '../../utils/paths.js';
 
 // 使用同步 require 导入 better-sqlite3
 const require = createRequire(import.meta.url);
@@ -48,9 +49,10 @@ class DatabaseConnectionManager {
     
     const projectRoot = this.getProjectRoot();
     
-    const defaultCalibrePath = path.join(projectRoot, 'data/calibre/metadata.db');
-    const defaultTalebookPath = path.join(projectRoot, 'data/talebook/calibre-webserver.db');
-    const defaultQcBooklogPath = path.join(projectRoot, 'data/qc_booklog.db');
+    // 数据文件统一落在 DATA_DIR 下（Electron 下为 userData/data）
+    const defaultCalibrePath = path.join(DATA_DIR, 'calibre/metadata.db');
+    const defaultTalebookPath = path.join(DATA_DIR, 'talebook/calibre-webserver.db');
+    const defaultQcBooklogPath = path.join(DATA_DIR, 'qc_booklog.db');
 
     const resolvePath = (dbPath) => {
       if (!dbPath) return dbPath;
@@ -83,12 +85,7 @@ class DatabaseConnectionManager {
    * 获取项目根目录
    */
   getProjectRoot() {
-    // 如果当前工作目录是server目录，则向上一级到达项目根目录
-    const currentDir = process.cwd();
-    if (path.basename(currentDir) === 'server') {
-      return path.dirname(currentDir);
-    }
-    return currentDir;
+    return PROJECT_ROOT;
   }
 
   /**

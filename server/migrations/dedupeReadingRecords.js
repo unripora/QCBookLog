@@ -9,6 +9,7 @@ import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { DATA_DIR } from '../utils/paths.js';
 
 const require = createRequire(import.meta.url);
 const Database = require('better-sqlite3').default || require('better-sqlite3');
@@ -16,14 +17,11 @@ const Database = require('better-sqlite3').default || require('better-sqlite3');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 默认数据库路径：项目根 data/qc_booklog.db，可在命令行传参
+// 默认数据库路径：统一数据目录下的 qc_booklog.db，可在命令行传参
 const dbPathArg = process.argv[2];
 const candidates = [
   dbPathArg,
-  path.resolve(__dirname, '../../data/qc_booklog.db'),
-  path.resolve(__dirname, '../../../data/qc_booklog.db'),
-  'D:\\下载\\docs-xmnote-master\\QC-booklog\\data\\qc_booklog.db',
-  'D:/下载/docs-xmnote-master/QC-booklog/data/qc_booklog.db'
+  path.join(DATA_DIR, 'qc_booklog.db')
 ].filter(Boolean);
 
 let dbPath = null;

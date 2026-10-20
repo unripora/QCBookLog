@@ -6,6 +6,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import winston from 'winston';
 import axios from 'axios';
@@ -17,6 +18,8 @@ import databaseService from './services/legacy/database-service.js';
 import syncScheduler from './services/sync/syncScheduler.js';
 import configManager from './config/index.js';
 import bookSourceSettingsService from './services/settings/book-source-settings-service.js';
+import { DATA_DIR, LOGS_DIR, METADATA_DIR, DIST_DIR } from './utils/paths.js';
+import { createLanAuth } from './utils/lanAuth.js';
 
 // 配置日志
 const logger = winston.createLogger({
@@ -27,7 +30,7 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.File({
-      filename: path.join(process.cwd(), '../data/logs/app.log'),
+      filename: path.join(LOGS_DIR, 'app.log'),
       maxsize: 5242880, // 5MB
       maxFiles: 5
     }),
@@ -46,7 +49,8 @@ const __dirname = path.dirname(__filename);
 
 // 创建Express应用
 const app = express();
-const PORT = process.env.PORT || 7401; // 触发重启
+// QC_PORT=0 时由系统分配端口（Electron），否则沿用 PORT / 7401
+const PORT = process.env.QC_PORT !== undefined ? Number(process.env.QC_PORT) : (process.env.PORT || 7401);
 
 // 中间件配置
 app.use(cors());
@@ -112,7 +116,7 @@ app.get('/api/health', (req, res) => {
 // 版本信息路由
 app.get('/api/version', (req, res) => {
   try {
-    const version = JSON.parse(fsSync.readFileSync(path.join(__dirname, '../data/metadata/version.json'), 'utf8'));
+    const version = JSON.parse(fsSync.readFileSync(path.join(METADATA_DIR, 'version.json'), 'utf8'));
     res.json(version);
   } catch (error) {
     logger.error('Failed to get version info', error);
@@ -361,6 +365,21 @@ app.get('/api/performance/report', (req, res) => {
   }
 });
 
+// 前端静态资源托管（生产构建产物 dist/）
+// 优先级必须保持：/api 路由（含上方 /api/static/calibre 动态文件服务）→ 静态资源 → SPA fallback
+if (fsSync.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR, { index: false }));
+
+  // SPA history 模式回退：非 /api 的 GET 请求统一返回 index.html
+  app.get(/^(?!\/api\/).*/, (req, res, next) => {
+    res.sendFile(path.join(DIST_DIR, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
+} else {
+  console.log('ℹ️ 未找到 dist/ 构建产物，仅提供 API 服务');
+}
+
 // 错误处理中间件
 app.use((err, req, res, next) => {
   logger.error('Server error', { error: err.message, stack: err.stack });
@@ -384,9 +403,12 @@ const startServer = async () => {
       }
     }
 
-    app.listen(PORT, '0.0.0.0', () => {
-      logger.info(`Server is running on port ${PORT}`);
-      console.log(`Server is running on http://0.0.0.0:${PORT}`);
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      const actualPort = server.address().port;
+      // 供 Electron 主进程解析实际监听端口
+      console.log(`SERVER_LISTENING_PORT=${actualPort}`);
+      logger.info(`Server is running on port ${actualPort}`);
+      console.log(`Server is running on http://0.0.0.0:${actualPort}`);
 
       // 显示数据库服务状态
       console.log(`\n📊 数据库服务状态:`);
@@ -411,7 +433,7 @@ const startServer = async () => {
       // 显示当前配置的数据库路径
       const currentDbPath = calibreService.getBookDir();
       console.log(`\n📚 当前 Calibre 书库目录: ${currentDbPath}`);
-      console.log(`✅ 如果需要切换书库，请访问: http://localhost:${PORT}/config`);
+      console.log(`✅ 如果需要切换书库，请访问: http://localhost:${actualPort}/config`);
       console.log('');
 
       // 启动同步调度器
@@ -422,11 +444,59 @@ const startServer = async () => {
       } else {
         console.log(`⚠️ QCBookLog 数据库不可用，跳过启动同步调度器`);
       }
+
+      // 局域网监听（监听 B）：默认关闭，LAN_ENABLED=1 时开启
+      if (process.env.LAN_ENABLED === '1') {
+        startLanListener(actualPort);
+      }
     });
   } catch (error) {
     console.error('❌ 服务器启动失败:', error);
     process.exit(1);
   }
+};
+
+/**
+ * 启动局域网监听（监听 B）
+ * 独立 Express 实例，仅挂鉴权中间件 + 路由代理，不影响桌面窗口（监听 A）
+ */
+const startLanListener = (localPort) => {
+  const lanAuth = createLanAuth();
+  const lanApp = express();
+
+  // 静态页面放行，API 走口令校验
+  lanApp.use(lanAuth.middleware);
+
+  // 其余请求全部转发到本地监听 A（同进程内的回环请求）
+  lanApp.use((req, res) => {
+    const proxyReq = http.request(
+      {
+        host: '127.0.0.1',
+        port: localPort,
+        path: req.originalUrl,
+        method: req.method,
+        headers: { ...req.headers, host: `127.0.0.1:${localPort}` }
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+        proxyRes.pipe(res);
+      }
+    );
+    proxyReq.on('error', () => {
+      if (!res.headersSent) {
+        res.status(502).json({ error: '后端转发失败' });
+      }
+    });
+    req.pipe(proxyReq);
+  });
+
+  const lanPort = process.env.QC_LAN_PORT ? Number(process.env.QC_LAN_PORT) : 0;
+  const lanServer = lanApp.listen(lanPort, '0.0.0.0', () => {
+    const actualLanPort = lanServer.address().port;
+    console.log(`LAN_LISTENING_PORT=${actualLanPort}`);
+    console.log(`LAN_PASSCODE=${lanAuth.getPasscode()}`);
+    console.log(`📱 手机访问已开启，端口 ${actualLanPort}`);
+  });
 };
 
 startServer();

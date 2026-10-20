@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import fsSync from 'fs';
 import { createRequire } from 'module';
+import { PROJECT_ROOT, DATA_DIR } from '../utils/paths.js';
 
 const require = createRequire(import.meta.url);
 let Database = null;
@@ -108,8 +109,8 @@ class ConfigManager extends EventEmitter {
    */
   getQcBooklogPath() {
     const config = this.config;
-    const projectRoot = process.cwd();
-    const defaultPath = path.join(projectRoot, 'data/qc_booklog.db');
+    const projectRoot = PROJECT_ROOT;
+    const defaultPath = path.join(DATA_DIR, 'qc_booklog.db');
     let dbPath = config.qcBooklogPath || process.env.QCBOOKLOG_DB_PATH || defaultPath;
     if (!path.isAbsolute(dbPath)) {
       dbPath = path.resolve(projectRoot, dbPath);

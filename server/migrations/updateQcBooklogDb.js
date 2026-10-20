@@ -8,11 +8,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
+import { DATA_DIR } from '../utils/paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DB_PATH = path.join(__dirname, '../data/qc_booklog.db');
+const DB_PATH = path.join(DATA_DIR, 'qc_booklog.db');
 
 export async function migrate() {
   console.log('🔄 开始更新 QCBookLog 数据库结构...');

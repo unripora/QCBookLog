@@ -1,12 +1,13 @@
 import databaseService from './database-service.js';
 import fs from 'fs';
 import path from 'path';
+import { USER_IMAGES_DIR } from '../../utils/paths.js';
 
 class UserImagesService {
   constructor() {
     this.db = null;
     this.maxImages = 6;
-    this.uploadDir = path.join(process.cwd(), 'data', 'user-images');
+    this.uploadDir = USER_IMAGES_DIR;
     this.ensureUploadDir();
   }
 

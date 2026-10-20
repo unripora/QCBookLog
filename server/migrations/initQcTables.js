@@ -7,13 +7,14 @@ import path from 'path';
 import fs from 'fs/promises';
 import databaseService from '../services/legacy/databaseService.js';
 import qcDataService from '../services/legacy/qcDataService.js';
+import { DATA_DIR } from '../utils/paths.js';
 
 /**
  * 数据迁移类
  */
 class DataMigration {
   constructor() {
-    this.dataDir = path.join(process.cwd(), '../data');
+    this.dataDir = DATA_DIR;
   }
 
   /**

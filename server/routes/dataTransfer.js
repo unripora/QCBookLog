@@ -10,13 +10,14 @@ import path from 'path';
 import databaseService from '../services/legacy/database-service.js';
 import calibreService from '../services/legacy/calibreService.js';
 import configManager from '../config/index.js';
+import { METADATA_DIR, PROJECT_ROOT } from '../utils/paths.js';
 
 const router = express.Router();
 
 /**
  * 转移日志存储路径
  */
-const LOG_DIR = path.join(process.cwd(), 'data/metadata/transfer-logs');
+const LOG_DIR = path.join(METADATA_DIR, 'transfer-logs');
 const LOG_FILE = path.join(LOG_DIR, 'transfer-history.log');
 
 /**
@@ -136,7 +137,7 @@ router.post('/target-info', async (req, res) => {
     if (!targetDir) {
       return res.status(400).json({ success: false, error: '请提供目标 Talebook 目录' });
     }
-    const absTarget = path.isAbsolute(targetDir) ? targetDir : path.resolve(process.cwd(), targetDir);
+    const absTarget = path.isAbsolute(targetDir) ? targetDir : path.resolve(PROJECT_ROOT, targetDir);
     const exists = fs.existsSync(absTarget);
     let fileCount = 0;
     let totalSize = 0;
@@ -202,7 +203,7 @@ router.post('/execute', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Calibre 数据库路径未配置' });
   }
   const calibreDir = path.dirname(calibrePath);
-  const absTarget = path.isAbsolute(targetDir) ? targetDir : path.resolve(process.cwd(), targetDir);
+  const absTarget = path.isAbsolute(targetDir) ? targetDir : path.resolve(PROJECT_ROOT, targetDir);
 
   // 2. 安全校验：源和目标不能是同一个目录
   try {

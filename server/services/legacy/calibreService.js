@@ -9,6 +9,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import NodeCache from 'node-cache';
 import { DATA_DIR, readJsonFile } from './dataService.js';
+import { PROJECT_ROOT } from '../../utils/paths.js';
 
 // 延迟导入数据库服务，避免启动错误
 let databaseService = null;
@@ -33,16 +34,8 @@ const getBookDir = () => {
       
       // 转换为绝对路径
       if (!path.isAbsolute(bookDir)) {
-        // 获取项目根目录（.env文件所在目录）
-        const currentDir = process.cwd();
-        let projectRoot;
-        if (path.basename(currentDir) === 'server') {
-          projectRoot = path.dirname(currentDir);
-        } else {
-          projectRoot = currentDir;
-        }
         // 使用 path.join 而不是 path.resolve，避免 .. 导致的路径错误
-        bookDir = path.join(projectRoot, bookDir);
+        bookDir = path.join(PROJECT_ROOT, bookDir);
       }
       
       console.log('📂 解析到的书库目录:', bookDir);

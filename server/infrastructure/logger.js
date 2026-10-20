@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { LOGS_DIR } from '../utils/paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +56,7 @@ const config = {
   level: process.env.LOG_LEVEL || LogLevel.INFO,
   enableConsole: process.env.LOG_CONSOLE !== 'false',
   enableFile: process.env.LOG_FILE !== 'false',
-  logDir: process.env.LOG_DIR || path.join(__dirname, '../../logs'),
+  logDir: process.env.LOG_DIR || LOGS_DIR,
   maxFileSize: 5 * 1024 * 1024, // 5MB
   maxFiles: 5,
   dateFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
